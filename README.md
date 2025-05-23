@@ -1,16 +1,3 @@
-# inventory_check
-
-A new Flutter project.
-
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+# 발주 도우미 시스템
+- 자영업자 엄마가 매일 노트에 발주 목록을 적어가면서 발주하는 걸 보고 휴대폰으로 내가 이때까지 넣었던 발주목록을 불러와서 계속 볼 수 있도록 하기 위해서 제작
+- 공기계에 APK를 설치해서 발주할 때만 사용하면서 엄마 본인 휴대폰으로 바로바로 발주를 넣을 수 있도록 함
