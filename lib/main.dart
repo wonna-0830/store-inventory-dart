@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:supabase/supabase.dart';
 import 'login.dart';
+import 'signup.dart';
+import 'home_page.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+
 
 late final SupabaseClient supabase;
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   // SupabaseClient 직접 초기화
   supabase = SupabaseClient(
     'https://zsfxqsqvmbhritorvlkd.supabase.co',
@@ -23,6 +28,20 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.teal,
       ),
       home: LoginPage(),
+      routes: {
+        '/login': (context) => LoginPage(),
+        '/signup': (context) => SignupPage(),     // ✅ 추가!
+        '/home': (context) => HomePage(),         // ✅ 경로명 확인!
+      },
+      localizationsDelegates: [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: [
+        const Locale('ko'), // 한국어
+        const Locale('en'), // 영어 (기본)
+      ],
     );
   }
 }
