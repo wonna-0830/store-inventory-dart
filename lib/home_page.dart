@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:inventory_check/main.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase/supabase.dart';
+import 'login.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class HomePage extends StatefulWidget {
 
@@ -19,11 +22,22 @@ class _HomePageState extends State<HomePage> {
   DateTime selectedDate = DateTime.now(); // 사용자가 선택한 날짜
   DateTime baseDate = DateTime.now(); // 캘린더 기준 날짜 (기본은 오늘, 팝업에서 바뀜)
 
+  String? userName;
+  String? userStore;
 
   @override
   void initState() {
     super.initState();
     fetchTodayOrders();
+    _loadUserBasics();
+  }
+
+  Future<void> _loadUserBasics() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      userName  = prefs.getString('userName');
+      userStore = prefs.getString('userStore');
+    });
   }
 
   //발주 목록 관리 버튼을 눌렀을 때 호출 -> IngredientManagePage로 이동
@@ -105,12 +119,16 @@ class _HomePageState extends State<HomePage> {
 
     // DB에서 온 항목만 삭제 API 호출
     if (item['source'] == 'db') {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString('userId');
+
       await supabase
           .from('daily_orders')
           .delete()
           .match({
         'name': item['name'],
         'date': item['date'],
+        'user_id': userId!,
       });
     }
 
@@ -125,6 +143,9 @@ class _HomePageState extends State<HomePage> {
 
 
   Future<void> fetchTodayOrders() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('userId');
+
     final today = DateTime.now();
     final formattedDate = "${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}";
 
@@ -132,6 +153,7 @@ class _HomePageState extends State<HomePage> {
         .from('daily_orders')
         .select()
         .eq('date', formattedDate)
+        .eq('user_id', userId!)
         .order('name', ascending: true);
 
     setState(() {
@@ -146,12 +168,17 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> fetchTodayOrdersByDate(DateTime date) async {
-    final formattedDate = "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+
+    final formattedDate =
+        "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
 
     final response = await supabase
         .from('daily_orders')
         .select()
         .eq('date', formattedDate)
+        .eq('user_id', user.id)
         .order('name', ascending: true);
 
     setState(() {
@@ -165,18 +192,19 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-
-
-
   //[확인] 버튼을 누르면 실행, 입력된 수량을 DB로 반영
   Future<void> _confirmOrder() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('userId');
+
     final formattedDate = DateFormat('yyyy-MM-dd').format(selectedDate);
 
     // ✅ 먼저 해당 날짜에 있는 데이터 삭제
     await supabase
         .from('daily_orders')
         .delete()
-        .eq('date', formattedDate);
+        .eq('date', formattedDate)
+        .eq('user_id', userId!);
 
     // ✅ 그리고 수정된 내용 다시 저장
     for (var order in todayOrders) {
@@ -188,6 +216,7 @@ class _HomePageState extends State<HomePage> {
 
       if (quantity > 0) {
         await supabase.from('daily_orders').insert({
+          'user_id': userId,   // ✅ 저장 시 user_id 붙이기
           'name': name,
           'quantity': quantity,
           'date': formattedDate,
@@ -233,9 +262,53 @@ class _HomePageState extends State<HomePage> {
     final weekDates = getFiveDayRange(baseDate);
 
     return Scaffold(
-      //앱 상단 UI (Text + Button)
       appBar: AppBar(
-        title: Text("정미씨 전용 발주 도우미💖"),
+        title: GestureDetector(
+          onTap: () {
+            showMenu<String>(
+              context: context,
+              position: const RelativeRect.fromLTRB(0, kToolbarHeight, 0, 0),
+              items: [
+                PopupMenuItem<String>(
+                  enabled: false,
+                  // 예) 사용자: 박정원 (마산어쩌고)
+                  child: Text(
+                    "사용자: ${userName ?? '-'}${userStore != null ? ' (${userStore})' : ''}",
+                  ),
+                ),
+                const PopupMenuDivider(),
+                const PopupMenuItem<String>(
+                  value: "logout",
+                  child: Text("로그아웃"),
+                ),
+              ],
+            ).then((value) async {
+              if (value == "logout") {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text("로그아웃 확인"),
+                    content: const Text("정말 로그아웃 하시겠습니까?"),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("취소")),
+                      TextButton(onPressed: () => Navigator.pop(ctx, true),
+                          child: const Text("로그아웃", style: TextStyle(color: Colors.red))),
+                    ],
+                  ),
+                );
+                if (confirm == true) {
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.remove('userId');
+                  await prefs.remove('userName');   // 👈 같이 지우기
+                  await prefs.remove('userStore');  // 👈 같이 지우기
+                  Navigator.pushReplacementNamed(context, '/login');
+                }
+              }
+            });
+
+          },
+          child: const Text("담꾹 전용 발주 도우미"),
+        ),
         actions: [
           TextButton(
             onPressed: _navigateToManagePage,
@@ -243,6 +316,7 @@ class _HomePageState extends State<HomePage> {
           )
         ],
       ),
+
       //앱 몸체
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -339,7 +413,7 @@ class _HomePageState extends State<HomePage> {
                     context: context,
                     builder: (context) => AlertDialog(
                       title: Text("저장 확인"),
-                      content: Text("엄마 제대로 수량 적었지? \n 이대로 저장한다~ \n 오늘도 파이팅💗"),
+                      content: Text("해당 내용으로 발주 내역을 저장하시겠습니까?"),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(context, false),
@@ -416,9 +490,6 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-
-
-
 class IngredientManagePage extends StatefulWidget {
   final SupabaseClient supabase;
 
@@ -464,29 +535,50 @@ class _IngredientManagePageState extends State<IngredientManagePage> {
 
   // 🔄 재료 목록 불러오기
   Future<void> fetchIngredients() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('userId');
+
     final response = await widget.supabase
         .from('ingredients')
         .select()
+        .eq('user_id', userId!)
         .order('name', ascending: true);
+
     setState(() {
       ingredients = List<Map<String, dynamic>>.from(response);
     });
   }
 
+
   // ➕ 재료 이름만 등록
   Future<void> insertIngredient() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('userId');
+
     final name = nameController.text.trim();
     if (name.isEmpty) return;
 
-    await widget.supabase.from('ingredients').insert({'name': name});
+    await widget.supabase.from('ingredients').insert({
+      'user_id': userId,
+      'name': name,
+    });
 
     nameController.clear();
-    fetchIngredients(); // 등록 후 다시 불러오기
+    fetchIngredients();
   }
 
-  // ❌ 삭제 기능 (원하면 추가)
+
+  // ❌ 삭제 기능
   Future<void> deleteIngredient(int id) async {
-    await widget.supabase.from('ingredients').delete().eq('id', id);
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('userId');
+
+    await widget.supabase
+        .from('ingredients')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', userId!);
+
     fetchIngredients();
   }
 

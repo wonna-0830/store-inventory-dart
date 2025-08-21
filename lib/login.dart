@@ -33,7 +33,9 @@ class _LoginPageState extends State<LoginPage> {
     final pw = pwController.text.trim();
 
     if (id.isEmpty || pw.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("아이디와 비밀번호를 입력하세요")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("아이디와 비밀번호를 입력하세요")),
+      );
       return;
     }
 
@@ -41,23 +43,39 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       final response = await supabase
-          .from('user') // 테이블 이름 확인 (user 또는 users)
+          .from('user')
           .select()
           .eq('id', id)
           .eq('password', pw)
           .maybeSingle();
 
+      print("✅ Supabase 응답: $response");
+
       if (response != null) {
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('userId', id); // 자동 로그인용 저장
+
+        // DB 응답에서 추가 필드 꺼내서 저장
+        final userName  = response['name']  as String?;
+        final userStore = response['store'] as String?;
+        final uid       = response['uid']   as String?;  // 있으면 함께 저장 (선택)
+
+        await prefs.setString('userId', id);          // 기존
+        if (userName  != null) await prefs.setString('userName',  userName);
+        if (userStore != null) await prefs.setString('userStore', userStore);
+        if (uid       != null) await prefs.setString('uid',       uid);
+
+        print("✅ 최종 userName: $userName");
+        print("✅ 최종 userStore: $userStore");
 
         _goToHome();
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("로그인 실패: 아이디 또는 비밀번호가 틀렸습니다")));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("로그인 실패: 아이디 또는 비밀번호가 틀렸습니다")),
+        );
       }
     } catch (e) {
       print("로그인 오류: $e");
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("오류 발생")));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("오류 발생")));
     } finally {
       setState(() => isLoading = false);
     }
