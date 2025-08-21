@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'main.dart';
-
+import 'package:uuid/uuid.dart';
 
 class SignupPage extends StatelessWidget {
   final TextEditingController nameController = TextEditingController();
@@ -50,6 +50,7 @@ class SignupPage extends StatelessWidget {
                   return;
                 }
 
+
                 try {
                   final existing = await supabase
                       .from('user')
@@ -64,7 +65,9 @@ class SignupPage extends StatelessWidget {
                     return;
                   }
 
+                  final uid = Uuid().v4();
                   await supabase.from('user').insert({
+                    'uid': uid,
                     'id': id,
                     'password': password,
                     'name': name,
