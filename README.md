@@ -6,6 +6,9 @@
 
 📄 [🇯🇵 日本語版READMEはこちら](./README.ja.md)
 
+**사용해보기**(안드로이드용)
+- https://appdistribution.firebase.dev/i/ecf7f96d44b4924f
+
 ---
 
 ## 주요 기능
