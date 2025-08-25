@@ -1,98 +1,89 @@
 import 'package:flutter/material.dart';
-import 'main.dart';
-import 'package:uuid/uuid.dart';
+import 'main.dart'; // supabase 전역 객체
 
 class SignupPage extends StatelessWidget {
+  SignupPage({super.key});
+
   final TextEditingController nameController = TextEditingController();
   final TextEditingController idController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController storeController = TextEditingController();
 
+  Future<void> _register(BuildContext context) async {
+    final id = idController.text.trim();
+    final password = passwordController.text.trim();
+    final name = nameController.text.trim();
+    final store = storeController.text.trim();
+
+    if (id.isEmpty || password.isEmpty || name.isEmpty || store.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("모든 항목을 입력해주세요")),
+      );
+      return;
+    }
+
+    try {
+      // 테이블 직접 insert() 금지. RPC('register_user')만 호출
+      final res = await supabase.rpc('register_user', params: {
+        'p_id': id,
+        'p_password': password,
+        'p_name': name,
+        'p_store': store,
+      });
+
+      // 결과 파싱 (대개 List 형태)
+      final ok = (res is List && res.isNotEmpty) || (res is Map && res.isNotEmpty);
+      if (ok) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("회원가입 완료!")),
+        );
+        Navigator.pop(context); // 로그인 화면으로
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("회원가입 실패: 관리자에게 문의하세요")),
+        );
+      }
+    } catch (e) {
+      // print('회원가입 RPC 오류: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("오류가 발생했습니다")),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('회원가입')),
+      appBar: AppBar(title: const Text('회원가입')),
       body: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           children: [
             TextField(
               controller: nameController,
-              decoration: InputDecoration(labelText: '이름'),
+              decoration: const InputDecoration(labelText: '이름'),
             ),
             TextField(
               controller: idController,
-              decoration: InputDecoration(labelText: '아이디'),
+              decoration: const InputDecoration(labelText: '아이디'),
             ),
             TextField(
               controller: passwordController,
               obscureText: true,
-              decoration: InputDecoration(labelText: '비밀번호'),
+              decoration: const InputDecoration(labelText: '비밀번호'),
             ),
             TextField(
               controller: storeController,
-              decoration: InputDecoration(labelText: '점포명'),
+              decoration: const InputDecoration(labelText: '점포명'),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () async {
-                //회원가입 로직
-                final id = idController.text.trim();
-                final password = passwordController.text.trim();
-                final name = nameController.text.trim();
-                final store = storeController.text.trim();
-
-                if (id.isEmpty || password.isEmpty || name.isEmpty || store.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text("모든 항목을 입력해주세요")),
-                  );
-                  return;
-                }
-
-
-                try {
-                  final existing = await supabase
-                      .from('user')
-                      .select()
-                      .eq('id', id)
-                      .maybeSingle();
-
-                  if (existing != null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text("이미 존재하는 아이디입니다")),
-                    );
-                    return;
-                  }
-
-                  final uid = Uuid().v4();
-                  await supabase.from('user').insert({
-                    'uid': uid,
-                    'id': id,
-                    'password': password,
-                    'name': name,
-                    'store': store,
-                  });
-
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text("회원가입 완료!")),
-                  );
-
-                  Navigator.pop(context); // 로그인 페이지로 이동
-                } catch (e) {
-                  print("회원가입 오류: $e");
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text("오류가 발생했습니다")),
-                  );
-                }
-              },
-              child: Text('회원가입'),
+              onPressed: () => _register(context),
+              child: const Text('회원가입'),
             ),
             TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: Text('로그인으로 돌아가기'),
+              onPressed: () => Navigator.pop(context),
+              child: const Text('로그인으로 돌아가기'),
             ),
           ],
         ),

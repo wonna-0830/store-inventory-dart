@@ -30,8 +30,8 @@ class MyApp extends StatelessWidget {
       home: LoginPage(),
       routes: {
         '/login': (context) => LoginPage(),
-        '/signup': (context) => SignupPage(),     // ✅ 추가!
-        '/home': (context) => HomePage(),         // ✅ 경로명 확인!
+        '/signup': (context) => SignupPage(),
+        '/home': (context) => HomePage(),
       },
       localizationsDelegates: [
         GlobalMaterialLocalizations.delegate,

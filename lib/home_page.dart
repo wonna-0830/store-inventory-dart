@@ -51,9 +51,13 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _showIngredientPickerDialog() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('userId');
+
     final response = await supabase
         .from('ingredients')
         .select('name')
+        .eq('user_id', userId!)
         .order('name', ascending: true);
 
     final List<String> ingredientNames =
@@ -168,8 +172,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> fetchTodayOrdersByDate(DateTime date) async {
-    final user = supabase.auth.currentUser;
-    if (user == null) return;
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('userId');
 
     final formattedDate =
         "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
@@ -178,7 +182,7 @@ class _HomePageState extends State<HomePage> {
         .from('daily_orders')
         .select()
         .eq('date', formattedDate)
-        .eq('user_id', user.id)
+        .eq('user_id', userId!)
         .order('name', ascending: true);
 
     setState(() {
@@ -199,14 +203,12 @@ class _HomePageState extends State<HomePage> {
 
     final formattedDate = DateFormat('yyyy-MM-dd').format(selectedDate);
 
-    // ✅ 먼저 해당 날짜에 있는 데이터 삭제
     await supabase
         .from('daily_orders')
         .delete()
         .eq('date', formattedDate)
         .eq('user_id', userId!);
 
-    // ✅ 그리고 수정된 내용 다시 저장
     for (var order in todayOrders) {
       final name = order['name'];
       final rawQuantity = order['quantity'];
@@ -216,7 +218,7 @@ class _HomePageState extends State<HomePage> {
 
       if (quantity > 0) {
         await supabase.from('daily_orders').insert({
-          'user_id': userId,   // ✅ 저장 시 user_id 붙이기
+          'user_id': userId,
           'name': name,
           'quantity': quantity,
           'date': formattedDate,
@@ -299,8 +301,8 @@ class _HomePageState extends State<HomePage> {
                 if (confirm == true) {
                   final prefs = await SharedPreferences.getInstance();
                   await prefs.remove('userId');
-                  await prefs.remove('userName');   // 👈 같이 지우기
-                  await prefs.remove('userStore');  // 👈 같이 지우기
+                  await prefs.remove('userName');
+                  await prefs.remove('userStore');
                   Navigator.pushReplacementNamed(context, '/login');
                 }
               }
@@ -346,7 +348,7 @@ class _HomePageState extends State<HomePage> {
                     return Card(
                       margin: EdgeInsets.symmetric(vertical: 3),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3), // 👈 여기!
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
                         child: Row(
                           children: [
                             Expanded(
@@ -362,15 +364,15 @@ class _HomePageState extends State<HomePage> {
                                 onChanged: (val) {
                                   setState(() {
                                     item['quantity'] = val;
-                                    item['editing'] = true; // ✨ 입력 중으로 표시
+                                    item['editing'] = true;
                                   });
                                 },
                                 decoration: InputDecoration(
                                   hintText: '수량',
                                   isDense: true,
                                   border: item['editing'] == true
-                                      ? UnderlineInputBorder()    // ✏️ 입력 중 → 밑줄 있음
-                                      : InputBorder.none,         // ✅ 저장됨 → 밑줄 없음
+                                      ? UnderlineInputBorder()
+                                      : InputBorder.none,
                                 ),
                               ),
                             ),
@@ -431,7 +433,7 @@ class _HomePageState extends State<HomePage> {
                     FocusManager.instance.primaryFocus?.unfocus();
                   });
 
-                  // ✅ 사용자가 저장을 눌렀을 때만 실행!
+                  // 사용자가 저장을 눌렀을 때만 실행!
                   if (confirm == true) {
                     await _confirmOrder();
                   }
@@ -448,7 +450,7 @@ class _HomePageState extends State<HomePage> {
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 TextButton.icon(
-                  onPressed: _showMonthlyCalendar, // 👈 날짜 고르는 함수 연결
+                  onPressed: _showMonthlyCalendar, // 날짜 고르는 함수 연결
                   icon: Icon(Icons.calendar_today, size: 18),
                   label: Text("전체 보기", style: TextStyle(fontSize: 14)),
                 ),
@@ -533,7 +535,7 @@ class _IngredientManagePageState extends State<IngredientManagePage> {
   }
 
 
-  // 🔄 재료 목록 불러오기
+  // 재료 목록 불러오기
   Future<void> fetchIngredients() async {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getString('userId');
@@ -550,7 +552,7 @@ class _IngredientManagePageState extends State<IngredientManagePage> {
   }
 
 
-  // ➕ 재료 이름만 등록
+  // 재료 이름만 등록
   Future<void> insertIngredient() async {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getString('userId');
@@ -568,7 +570,7 @@ class _IngredientManagePageState extends State<IngredientManagePage> {
   }
 
 
-  // ❌ 삭제 기능
+  // 삭제 기능
   Future<void> deleteIngredient(int id) async {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getString('userId');
@@ -590,7 +592,7 @@ class _IngredientManagePageState extends State<IngredientManagePage> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // 🔤 입력창 (이름만) — 공간이 좁아질 경우에도 안전하게 표시되도록 개선
+            // 입력창 (이름만) — 공간이 좁아질 경우에도 안전하게 표시되도록 개선
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -609,7 +611,7 @@ class _IngredientManagePageState extends State<IngredientManagePage> {
             ),
             SizedBox(height: 24),
 
-            // 📜 등록된 재료 리스트
+            // 등록된 재료 리스트
             Expanded(
               child: ListView.builder(
                 itemCount: ingredients.length,
