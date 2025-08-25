@@ -7,7 +7,7 @@
 📄 [🇯🇵 日本語版READMEはこちら](./README.ja.md)
 
 **사용해보기**(안드로이드용)
-- https://appdistribution.firebase.dev/i/92a893c4d012f991
+- https://appdistribution.firebase.dev/i/10fa5d23488733b7
 
 ---
 
