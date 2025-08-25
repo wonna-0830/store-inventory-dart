@@ -13,25 +13,43 @@
 
 ## 주요 기능
 
+### 로그인 & 회원가입 화면
+- 회원가입으로 supabase에 계정 정보를 저장합니다.
+- 비밀번호는 RPC 방식으로 DB 내부에서 안전하게 암호화·검증되며, 클라이언트는 결과만 받아 보안을 강화했습니다.
+- 로그인 후 홈 화면으로 넘어갑니다.
+<a href="https://github.com/wonna-0830/login">
+  <img src="images/login.PNG" width="180">
+  <img src="images/signup.PNG" width="180">
+</a>
+
 ### 홈 화면
 - 오늘의 발주 리스트를 카드 형식으로 보여줍니다.
 - +버튼을 누르면 미리 등록한 재료들을 선택하여 발주 카드에 추가할 수 있습니다.
 - 발주 수량을 입력하고 확인 버튼을 누르면 DB에 저장됩니다.
+<a href="https://github.com/wonna-0830/main">
+  <img src="images/main.PNG" width="180">
+  <img src="images/itemselect.PNG" width="180">
+  <img src="images/itemcheck.PNG" width="180">
+</a>
 
 ### 발주 재료 관리
 - "발주 목록 관리" 버튼을 통해 등록된 재료를 추가하거나 삭제할 수 있습니다.
 - AlertDialog로 삭제 확인을 받으며, UI는 깔끔한 카드 형태로 구성되어 있습니다.
 - 확인 버튼을 누르면 날짜와 함께 발주 목록이 DB에 저장됩니다.
+<a href="https://github.com/wonna-0830/itemmanage">
+  <img src="images/itemmanage.PNG" width="180">
+</a>
 
-### 5일간의 미니 캘린더
+### 5일간의 미니 캘린더 + 전체 달력 (팝업)
 - 오늘 날짜 기준으로 -3일~+1일까지의 5일간 발주 내역을 쉽게 볼 수 있습니다.
   - 발주 습관과 의견을 여쭤보니 오늘 기준 2~3일 전 발주 내역을 많이 참고하신다고 해 반영했습니다.
 - 확인 버튼을 누르면 입력된 수량이 해당 날짜로 DB에 저장되고, 기존 내용은 덮어쓰기됩니다.
 - 수량은 저장 후에도 수정 가능하며, 다시 확인 버튼을 누르면 수정된 내용이 반영됩니다.
-
-### 전체 달력 (팝업)
 - "전체보기" 버튼을 누르면 한 달치 달력이 팝업으로 표시되어 원하는 날짜를 선택할 수 있습니다.
 - 선택한 해당 날짜를 기준으로 5일치 캘린더가 홈 화면에 표시됩니다.
+<a href="https://github.com/wonna-0830/celendar">
+  <img src="images/celendar.PNG" width="180">
+</a>
 
 ---
 
