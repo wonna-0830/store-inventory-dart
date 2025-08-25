@@ -51,9 +51,13 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _showIngredientPickerDialog() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('userId');
+
     final response = await supabase
         .from('ingredients')
         .select('name')
+        .eq('user_id', userId!)
         .order('name', ascending: true);
 
     final List<String> ingredientNames =
@@ -168,8 +172,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> fetchTodayOrdersByDate(DateTime date) async {
-    final user = supabase.auth.currentUser;
-    if (user == null) return;
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('userId');
 
     final formattedDate =
         "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
@@ -178,7 +182,7 @@ class _HomePageState extends State<HomePage> {
         .from('daily_orders')
         .select()
         .eq('date', formattedDate)
-        .eq('user_id', user.id)
+        .eq('user_id', userId!)
         .order('name', ascending: true);
 
     setState(() {

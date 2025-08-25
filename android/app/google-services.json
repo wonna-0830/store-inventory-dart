@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "307615772468",
+    "project_id": "inventorycheck-26773",
+    "storage_bucket": "inventorycheck-26773.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:307615772468:android:21355a620bd2b416ff3f61",
+        "android_client_info": {
+          "package_name": "com.example.inventory_check"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCHvLYmCHogvdSei5EwXk8awcoEwQG8rnQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
