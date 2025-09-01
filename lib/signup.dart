@@ -23,7 +23,6 @@ class SignupPage extends StatelessWidget {
     }
 
     try {
-      // 테이블 직접 insert() 금지. RPC('register_user')만 호출
       final res = await supabase.rpc('register_user', params: {
         'p_id': id,
         'p_password': password,
@@ -31,22 +30,27 @@ class SignupPage extends StatelessWidget {
         'p_store': store,
       });
 
-      // 결과 파싱 (대개 List 형태)
-      final ok = (res is List && res.isNotEmpty) || (res is Map && res.isNotEmpty);
-      if (ok) {
+      // 현재 register_user 함수는 void라서 res == null 이면 성공
+      if (res == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("회원가입 완료!")),
         );
-        Navigator.pop(context); // 로그인 화면으로
+        // 성공 시 로그인 페이지로 돌아가기
+        Navigator.pop(context);
+      } else if (res == 'DUPLICATE') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("이미 존재하는 아이디입니다.")),
+        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("회원가입 실패: 관리자에게 문의하세요")),
+          SnackBar(content: Text("회원가입 실패: $res")),
         );
       }
-    } catch (e) {
-      // print('회원가입 RPC 오류: $e');
+    } catch (e, st) {
+      print("❌ 회원가입 RPC 오류: $e");
+      print("STACKTRACE: $st");
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("오류가 발생했습니다")),
+        SnackBar(content: Text("오류: $e")),
       );
     }
   }
