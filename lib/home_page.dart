@@ -56,14 +56,41 @@ class _HomePageState extends State<HomePage> {
 
     final response = await supabase
         .from('ingredients')
-        .select('name')
-        .eq('user_id', userId!)
+        .select('id, name, category, is_common, user_id')
+        .or('is_common.is.true,user_id.eq.$userId')
+        .order('category')
         .order('name', ascending: true);
 
-    final List<String> ingredientNames =
-    List<Map<String, dynamic>>.from(response)
-        .map((item) => item['name'] as String)
-        .toList();
+    final List<Map<String, dynamic>> ingredientItems =
+    List<Map<String, dynamic>>.from(response);
+
+    Widget buildCategorySection(String category, List<Map<String, dynamic>> items) {
+      final filtered = items.where((e) => e['category'] == category).toList();
+      if (filtered.isEmpty) return SizedBox();
+
+      return ExpansionTile(
+        title: Text(category, style: TextStyle(fontWeight: FontWeight.bold)),
+        children: filtered.map((item) => ListTile(
+          title: Text(item['name']),
+          onTap: () {
+            Navigator.pop(context);
+
+            if (!todayOrders.any((o) => o['name'] == item['name'])) {
+              setState(() {
+                todayOrders.add({
+                  'name': item['name'],
+                  'quantity': '',
+                  'controller': TextEditingController(),
+                  'source': 'new',
+                  'editing': true,
+                });
+              });
+            }
+          },
+        )).toList(),
+      );
+    }
+
 
     showDialog(
       context: context,
@@ -73,29 +100,14 @@ class _HomePageState extends State<HomePage> {
           content: SizedBox(
             width: double.maxFinite,
             height: 400,
-            child: ListView.builder(
-              itemCount: ingredientNames.length,
-              itemBuilder: (context, index) {
-                final name = ingredientNames[index];
-                return ListTile(
-                  title: Text(name),
-                  onTap: () {
-                    Navigator.pop(context);
-
-                    // 이미 있는 재료는 다시 추가하지 않음
-                    if (!todayOrders.any((item) => item['name'] == name)) {
-                      setState(() {
-                        todayOrders.add({
-                          'name': name,
-                          'quantity': '',
-                          'source': 'new',
-                          'editing': true,
-                        });
-                      });
-                    }
-                  },
-                );
-              },
+            child: ListView(
+              children: [
+                buildCategorySection('냉동', ingredientItems),
+                buildCategorySection('냉장', ingredientItems),
+                buildCategorySection('소스', ingredientItems),
+                buildCategorySection('포장', ingredientItems),
+                buildCategorySection('야채', ingredientItems),
+              ],
             ),
           ),
           actions: [
@@ -165,6 +177,7 @@ class _HomePageState extends State<HomePage> {
       todayOrders.addAll(List<Map<String, dynamic>>.from(
         response.map((e) => {
           ...(e as Map<String, dynamic>),
+          'controller': TextEditingController(text: e['quantity']?.toString() ?? ''),
           'source': 'db',
         }),
       ));
@@ -190,6 +203,7 @@ class _HomePageState extends State<HomePage> {
       todayOrders.addAll(List<Map<String, dynamic>>.from(
         response.map((e) => {
           ...(e as Map<String, dynamic>),
+          'controller': TextEditingController(text: e['quantity']?.toString() ?? ''),
           'source': 'db',
         }),
       ));
@@ -343,8 +357,8 @@ class _HomePageState extends State<HomePage> {
                   itemBuilder: (context, index) {
                     final item = todayOrders[index];
                     // 수량 입력을 위한 TextEditingController
-                    final controller = TextEditingController(text: item['quantity'].toString());
-
+                    final controller = item['controller'] as TextEditingController;
+                    controller.text = item['quantity'].toString();
                     return Card(
                       margin: EdgeInsets.symmetric(vertical: 3),
                       child: Padding(
@@ -375,6 +389,7 @@ class _HomePageState extends State<HomePage> {
                                       : InputBorder.none,
                                 ),
                               ),
+
                             ),
                             IconButton(
                               icon: Icon(Icons.delete, color: Colors.red),
@@ -540,11 +555,13 @@ class _IngredientManagePageState extends State<IngredientManagePage> {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getString('userId');
 
-    final response = await widget.supabase
+    final response = await supabase
         .from('ingredients')
         .select()
-        .eq('user_id', userId!)
+        .order('category')
         .order('name', ascending: true);
+
+    print(response);
 
     setState(() {
       ingredients = List<Map<String, dynamic>>.from(response);
@@ -553,19 +570,26 @@ class _IngredientManagePageState extends State<IngredientManagePage> {
 
 
   // 재료 이름만 등록
+  String? selectedCategory;
+
   Future<void> insertIngredient() async {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getString('userId');
 
     final name = nameController.text.trim();
-    if (name.isEmpty) return;
+    if (name.isEmpty || selectedCategory == null) return;
 
     await widget.supabase.from('ingredients').insert({
       'user_id': userId,
       'name': name,
+      'category': selectedCategory,
+      'is_common': false
     });
 
     nameController.clear();
+    setState(() {
+      selectedCategory = null;
+    });
     fetchIngredients();
   }
 
@@ -584,6 +608,25 @@ class _IngredientManagePageState extends State<IngredientManagePage> {
     fetchIngredients();
   }
 
+  Widget buildCategorySection(String category, List<Map<String, dynamic>> items) {
+    final filtered = items.where((e) => e['category'] == category).toList();
+    if (filtered.isEmpty) return SizedBox();
+
+    return ExpansionTile(
+      title: Text(category, style: TextStyle(fontWeight: FontWeight.bold)),
+      children: filtered.map((item) => ListTile(
+        title: Text(item['name']),
+        trailing: item['is_common'] == true
+            ? null // 공통 품목은 삭제 불가
+            : IconButton(
+          icon: Icon(Icons.delete, color: Colors.red),
+          onPressed: () => _showDeleteDialog(item['id'], item['name']),
+        ),
+      )).toList(),
+    );
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -597,9 +640,23 @@ class _IngredientManagePageState extends State<IngredientManagePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
+                  flex: 2,
+                  child: DropdownButton<String>(
+                    value: selectedCategory,
+                    hint: Text('카테고리'),
+                    items: ['냉동', '냉장', '소스', '포장', '야채']
+                        .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                        .toList(),
+                    onChanged: (val) {
+                      setState(() => selectedCategory = val);
+                    },
+                  ),
+                ),
+                Expanded(
+                  flex: 3,
                   child: TextField(
                     controller: nameController,
-                    decoration: InputDecoration(labelText: '재료 이름 입력'),
+                    decoration: InputDecoration(labelText: '재료 이름'),
                   ),
                 ),
                 SizedBox(width: 8),
@@ -613,24 +670,14 @@ class _IngredientManagePageState extends State<IngredientManagePage> {
 
             // 등록된 재료 리스트
             Expanded(
-              child: ListView.builder(
-                itemCount: ingredients.length,
-                itemBuilder: (context, index) {
-                  final item = ingredients[index];
-                  return Card(
-                    child: ListTile(
-                      title: Text(
-                        item['name'],
-                        overflow: TextOverflow.ellipsis, // 이름이 길어도 한 줄로 자름
-                      ),
-                      trailing: IconButton(
-                        icon: Icon(Icons.delete),
-                        onPressed: () => _showDeleteDialog(item['id'], item['name']),
-
-                      ),
-                    ),
-                  );
-                },
+              child: ListView(
+                children: [
+                  buildCategorySection('냉동', ingredients),
+                  buildCategorySection('냉장', ingredients),
+                  buildCategorySection('소스', ingredients),
+                  buildCategorySection('포장', ingredients),
+                  buildCategorySection('야채', ingredients),
+                ],
               ),
             )
           ],
