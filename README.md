@@ -28,7 +28,7 @@
 - 발주 수량을 입력하고 확인 버튼을 누르면 DB에 저장됩니다.
 <a href="https://github.com/wonna-0830/main">
   <img src="images/main.PNG" width="180">
-  <img src="images/itemselect.PNG" width="180">
+  <img width="180" height="380" alt="itemselect" src="https://github.com/user-attachments/assets/57e73b5d-f93a-4c97-89b6-915a66dcc7fd" />
   <img src="images/itemcheck.PNG" width="180">
 </a>
 
@@ -37,7 +37,8 @@
 - AlertDialog로 삭제 확인을 받으며, UI는 깔끔한 카드 형태로 구성되어 있습니다.
 - 확인 버튼을 누르면 날짜와 함께 발주 목록이 DB에 저장됩니다.
 <a href="https://github.com/wonna-0830/itemmanage">
-  <img src="images/itemmanage.PNG" width="180">
+  <img width="180" height="380" alt="itemmanage" src="https://github.com/user-attachments/assets/597585d8-1e2d-491d-9851-362dbbd77960" />
+
 </a>
 
 ### 5일간의 미니 캘린더 + 전체 달력 (팝업)
