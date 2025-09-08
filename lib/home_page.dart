@@ -558,6 +558,7 @@ class _IngredientManagePageState extends State<IngredientManagePage> {
     final response = await supabase
         .from('ingredients')
         .select()
+        .or('is_common.is.true,user_id.eq.$userId')
         .order('category')
         .order('name', ascending: true);
 
