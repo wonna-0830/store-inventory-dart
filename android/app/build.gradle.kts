@@ -6,6 +6,15 @@ plugins {
     id("com.google.gms.google-services")
 }
 
+import java.util.Properties
+        import java.io.FileInputStream
+
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace = "com.example.inventory_check"
     compileSdk = 35
@@ -33,10 +42,10 @@ android {
 
     signingConfigs {
         create("release") {
-            keyAlias = project.findProperty("MY_KEY_ALIAS") as String
-            keyPassword = project.findProperty("MY_KEY_PASSWORD") as String
-            storeFile = file(project.findProperty("MY_KEYSTORE_FILE") as String)
-            storePassword = project.findProperty("MY_KEYSTORE_PASSWORD") as String
+            keyAlias = keystoreProperties["MY_KEY_ALIAS"] as String
+            keyPassword = keystoreProperties["MY_KEY_PASSWORD"] as String
+            storeFile = file(keystoreProperties["MY_KEYSTORE_FILE"] as String)
+            storePassword = keystoreProperties["MY_KEYSTORE_PASSWORD"] as String
         }
     }
 
